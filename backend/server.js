@@ -1,28 +1,56 @@
-require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
+const authentication = require('./router/authentication');
+const adminFunctions = require('./router/packageCRUD');
+const dishes = require('./router/Dishes')
+const Table = require('./router/TableOperations');
+const Reports = require('./router/report');
+const Feedback = require('./router/feedback');
 const cors = require('cors');
-const morgan = require('morgan');
-
-const authRoutes = require('./routes/auth');
-const menuRoutes = require('./routes/menu');
-const orderRoutes = require('./routes/orders');
-
+const session = require('express-session');
+const cookieParser = require('cookie-parser');
+const bodyParser = require('body-parser');
+const authMiddleware = require('./middleware/AuthMiddleware');
+const authAdmin = require('./middleware/AuthAdmin')
+const adminReport = require('./router/AdminRoutes')
 const app = express();
-app.use(cors());
+
+app.use(cors({
+    origin: process.env.ORIGIN_URL,
+    methods: ['GET', 'POST', 'DELETE', 'PATCH', 'PUT'], 
+    credentials: true, 
+}));
+
 app.use(express.json());
-app.use(morgan('dev'));
+app.use(cookieParser());
+app.use(bodyParser.json());
+app.use(session({
+    secret: 'secret',
+    resave: false, 
+    saveUninitialized: false,
+    cookie: {
+        secure: false, 
+        maxAge: 1000 * 60 * 60 * 24, 
+    }
+}));
 
-app.use('/api/auth', authRoutes);
-app.use('/api/menu', menuRoutes);
-app.use('/api/orders', orderRoutes);
+const url = process.env.SECRET_URL;
 
-const PORT = process.env.PORT || 5000;
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(()=> {
-    console.log('MongoDB connected');
-    app.listen(PORT, ()=> console.log(`Server running on port ${PORT}`));
-  })
-  .catch(err => {
-    console.error('Mongo connect error', err);
-  });
+mongoose.connect(url);
+const con = mongoose.connection;
+
+con.on('open', () => {
+    console.log('DB connected SUCCESSFULLY ...');
+});
+
+app.use('/admin',  authAdmin,adminFunctions);
+app.use('/admin/reports', authAdmin,adminReport);
+app.use('/api',authMiddleware,dishes);
+app.use('/tables', authMiddleware, Table); 
+app.use('/reports', authMiddleware, Reports);
+app.use('/api', authMiddleware,Feedback); 
+app.use(authentication);
+
+app.listen(4000, () => {
+    console.log('Server running on port 4000');
+});
