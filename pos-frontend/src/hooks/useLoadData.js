@@ -9,7 +9,7 @@ const useLoadData = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  useEffect(() => {   
     const fetchUser = async () => {
       try {
         const { data } = await getUserData();
@@ -18,7 +18,7 @@ const useLoadData = () => {
         dispatch(setUser({ _id, name, email, phone, role }));
       } catch (error) {
         dispatch(removeUser());
-        Navigate("/auth");
+        navigate("/auth");
         console.log(error);
       }finally{
         setIsLoading(false);

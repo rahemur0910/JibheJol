@@ -11,4 +11,4 @@ router.route("/logout").post(isVerifiedUser, logout)
 
 router.route("/").get(isVerifiedUser , getUserData);
 
-module.exports = router;
+module.exports = router;  
