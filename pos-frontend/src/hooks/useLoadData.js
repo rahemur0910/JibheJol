@@ -9,18 +9,33 @@ const useLoadData = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {   
+  useEffect(() => {
     const fetchUser = async () => {
       try {
         const { data } = await getUserData();
-        console.log(data);
+
+        // ✅ If API sends "not logged in" info (depends on backend format)
+        if (!data?.data?._id) {
+          dispatch(removeUser());
+          setIsLoading(false);
+          return; // don't redirect for guests
+        }
+
+        // ✅ Logged-in user found
         const { _id, name, email, phone, role } = data.data;
         dispatch(setUser({ _id, name, email, phone, role }));
       } catch (error) {
-        dispatch(removeUser());
-        navigate("/auth");
-        console.log(error);
-      }finally{
+        const status = error?.response?.status;
+
+        if (status === 401) {
+          // ✅ 401 means not logged in, so don’t throw red screen error
+          dispatch(removeUser());
+          // ❌ Don’t navigate if you just opened the app before login
+          // navigate("/auth"); <-- remove this or make optional
+        } else {
+          console.error("Unexpected error fetching user:", error);
+        }
+      } finally {
         setIsLoading(false);
       }
     };
